@@ -1,11 +1,13 @@
 <?php
-	class database {
+	define ('_HOST_NAME', 'localhost');
+	define ('_DB_USER', 'root');
+	define ('_DB_PASS', '');
+	define ('_DB_NAME', 'interview');
+	
+	class Database {
+		
 		public $db;
 		public function __construct() {
-			define ('_HOST_NAME', 'localhost');
-			define ('_DB_USER', 'root');
-			define ('_DB_PASS', '');
-			define ('_DB_NAME', 'interview');
 			$this->db = new mysqli (_HOST_NAME, _DB_USER, _DB_PASS, _DB_NAME);
 			if(mysqli_connect_errno()) {
 				echo "ERROR: Could not connect to DB";

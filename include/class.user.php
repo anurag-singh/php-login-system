@@ -1,81 +1,99 @@
-<?php 
-	include "db_config.php";
-
-	class User{
-		
-		public $db;
-		public function __construct(){
-			$this->db = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_DATABASE);
-		
-			if(mysqli_connect_errno()) {
-	 
-				echo "Error: Could not connect to database.";
-	 
-			exit;
- 
-			}
-		}
-
-		/*** for registration process ***/
-		public function reg_user($name,$username,$password,$email){
-
-			
+<?php
+	include 'include/class.database.php';
+	class User extends Database {
+		public function register($name, $email, $password) {
 			$password = md5($password);
-			$sql="SELECT * FROM users WHERE uname='$username' OR uemail='$email'";
-			
-			//checking if the username or email is available in db
-			$check =  $this->db->query($sql) ;
-			$count_row = $check->num_rows;
-
-			//if the username is not in db then insert to the table
-			if ($count_row == 0){
-				$sql1="INSERT INTO users SET uname='$username', upass='$password', fullname='$name', uemail='$email'";
-				$result = mysqli_query($this->db,$sql1) or die(mysqli_connect_errno()."Data cannot inserted");
-        		return $result;
+			$selectUsers = "SELECT * 
+							FROM users
+							WHERE email='$email'
+							";
+			# Check if user already register
+			$checkUser = $this->db->query($selectUsers);
+			$count_row = $checkUser->num_rows;
+			# if user not register then register them
+			if($count_row == 0) {
+				$addUser = "INSERT INTO users
+							SET name='$name', email='$email', password='$password'
+							";
+				$result = mysqli_query($this->db, $addUser) or die (mysqli_connect_errno(). "ERROR: User not register.");
+				return $result;
 			}
-			else { return false;}
+			else {
+				return false;
+			}
+		}
+		public function login($email, $password) {
+			$password = md5($password);
+
+			$query = "SELECT email, password, userID
+						FROM users
+						WHERE email=? AND password=?
+						";
+
+			$stmt = $this->db->prepare($query);
+			$stmt->bind_param('sss', $email, $password, $userID);
+			$stmt -> execute();
+			
+			$stmt->bind_result($email, $password, $userID);
+
+			$stmt -> fetch();
+			echo $name;
+      		$_SESSION['login'] = true;
+			$_SESSION['userID'] = $userID; 
+			return true;
+
+			$stmt->close();
+			#$stmt->free_result();
+		}
+
+		// public function login($email, $password) {
+		// 	$password = md5($password);
+		// 	$checkUserInputs = "SELECT userID
+		// 						FROM users
+		// 						WHERE email='$email' and password='$password'
+		// 						";
+
+		// 	#Check if user details present in DB
+		// 	$result = mysqli_query($this->db, $checkUserInputs);
+		// 	$user_data = mysqli_fetch_assoc($result);
+			
+		// 	$count_row = $result->num_rows;
+		// 	if($count_row == 1) {
+		// 		$_SESSION['login'] = true;
+		// 		$_SESSION['userID'] = $user_data['userID']; 
+		// 		return true;
+		// 	}
+		// 	else {
+		// 		return false;
+		// 	}
+		// }
+
+		public function get_fullname($userID) {
+			$displayFullName = "SELECT name
+								FROM users
+								WHERE userID='$userID'
+								";
+			$result = mysqli_query($this->db, $displayFullName)	;
+			$user_data = mysqli_fetch_assoc($result);
+			print $user_data['name'];
 		}
 
 
-		/*** for login process ***/
-		public function check_login($emailusername, $password){
-        	
-        	$password = md5($password);
-			$sql2="SELECT uid from users WHERE uemail='$emailusername' or uname='$emailusername' and upass='$password'";
-			
-			//checking if the username is available in the table
-        	$result = mysqli_query($this->db,$sql2);
-        	$user_data = mysqli_fetch_array($result);
-        	$count_row = $result->num_rows;
-		
-	        if ($count_row == 1) {
-	            // this login var will use for the session thing
-	            $_SESSION['login'] = true; 
-	            $_SESSION['uid'] = $user_data['uid'];
-	            return true;
-	        }
-	        else{
-			    return false;
-			}
-    	}
-
-    	/*** for showing the username or fullname ***/
-    	public function get_fullname($uid){
-    		$sql3="SELECT fullname FROM users WHERE uid = $uid";
-	        $result = mysqli_query($this->db,$sql3);
-	        $user_data = mysqli_fetch_array($result);
-	        echo $user_data['fullname'];
-    	}
-  
-    	/*** starting the session ***/
-	    public function get_session(){    
-	        return $_SESSION['login'];
-	    }
-
-	    public function user_logout() {
-	        $_SESSION['login'] = FALSE;
-	        session_destroy();
-	    }
-
+		public function get_user_details($userID) {
+			$displayUserDeatils = "SELECT * 
+									FROM users
+									WHERE userID='$userID'
+									";
+			$result = mysqli_query($this->db, $displayUserDeatils);
+			$user_data = mysqli_fetch_assoc($result);
+			echo $user_data['name'], $user_data['email'], $user_data['reg_date'];
+		}
+		public function get_session() {
+			return $_SESSION['login'];
+		}
+		public function user_logout() {
+			$_SESSION['login'] = FALSE;
+			session_destroy();
+		}
 	}
 ?>
